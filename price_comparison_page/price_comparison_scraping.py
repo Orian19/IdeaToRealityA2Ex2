@@ -1,7 +1,12 @@
+from fastapi import FastAPI, HTTPException
 from selenium.webdriver.common.by import By
 import undetected_chromedriver as uc
 import pandas as pd
+import uvicorn
 import time
+
+
+app = FastAPI()
 
 
 def get_webdriver():
@@ -47,28 +52,30 @@ def scrape_site(driver, url, site_name):
     return item, price
 
 
-def main():
-    product_name = input("Enter the product name: ")
+@app.post("/scrape/")
+def scrape(product_name: str):  # Note: This is now a regular function, not async.
     sites = {
         "Walmart": "https://www.walmart.com/search/?query=",
         "Best Buy": "https://www.bestbuy.com/site/searchpage.jsp?st=",
         "Newegg": "https://www.newegg.com/p/pl?d="
     }
+    results = []
 
-    results = pd.DataFrame(columns=['Site', 'Item Title Name', 'Price(USD)'])
-
-    # Initialize the webdriver
     driver = get_webdriver()
 
     for site, base_url in sites.items():
         search_url = base_url + product_name.replace(" ", "+")
-        title, price = scrape_site(driver, search_url, site)  # Pass the driver as an argument
-        results = pd.concat([results, pd.DataFrame([{'Site': site, 'Item Title Name': title, 'Price(USD)': price}])], ignore_index=True)
+        title, price = scrape_site(driver, search_url, site)
+        results.append({'Site': site, 'Item Title Name': title, 'Price(USD)': price})
 
-    # Close the driver after completing the loop
     driver.quit()
-    print(results)
+
+    if results:
+        return results
+    else:
+        raise HTTPException(status_code=404, detail="Data not found")
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=8001)
+
