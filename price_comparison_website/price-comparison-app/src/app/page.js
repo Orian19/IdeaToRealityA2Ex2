@@ -5,10 +5,12 @@ import { useState } from "react";
 
 export default function Home() {
   const [productName, setProductName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState([]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true); // Start loading
     const response = await fetch('http://127.0.0.1:8001/scrape/', {
       method: 'POST',
       headers: {
@@ -24,6 +26,7 @@ export default function Home() {
       console.error("Failed to fetch data");
       setResults([]);
     }
+    setIsLoading(false); // Stop loading
   };
 
   return (
@@ -41,13 +44,15 @@ export default function Home() {
           <button type="submit" className="rounded-md bg-blue-500 py-2 px-4 text-lg text-white hover:bg-blue-600">Search</button>
         </form>
       </div>
-      {results.length > 0 && (
-        <div className="my-8 w-full max-w-4xl">
+      {isLoading ? (
+        <div className="text-lg font-semibold text-green-700">Fetching Results...</div>
+      ) : results.length > 0 ? (
+        <div className="my-8 w-full max-w-4xl overflow-x-auto">
           <table className="w-full border-collapse border border-gray-200">
             <thead className="bg-gray-200">
               <tr>
                 <th className="border border-gray-300 px-4 py-2 text-left text-lg font-semibold text-gray-700">Site</th>
-                <th className="border border-gray-300 px-4 py-2 text-left text-lg font-semibold text-gray-700">Item Title Name</th>
+                <th className="border border-gray-300 px-4 py-2 text-left text-lg font-semibold text-gray-700">Item</th>
                 <th className="border border-gray-300 px-4 py-2 text-left text-lg font-semibold text-gray-700">Price(USD)</th>
               </tr>
             </thead>
@@ -67,6 +72,8 @@ export default function Home() {
             </tbody>
           </table>
         </div>
+      ) : (
+        <div className="text-lg font-semibold">No results found.</div>
       )}
     </main>
   );
