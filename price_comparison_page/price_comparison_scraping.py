@@ -1,11 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from selenium.webdriver.common.by import By
 import undetected_chromedriver as uc
-import pandas as pd
 import uvicorn
 import time
 
 from fastapi.middleware.cors import CORSMiddleware
+from selenium_stealth import stealth
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -25,11 +25,23 @@ class Data(BaseModel):
 
 def get_webdriver():
     options = uc.ChromeOptions()
-    # options.add_argument('--headless')
+    options.add_argument("--headless=new")
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.106 Safari/537.36")
 
     driver = uc.Chrome(options=options)
+
+    stealth(driver,
+            languages=["en-US", "en"],
+            vendor="Google Inc.",
+            platform="Win64",
+            webgl_vendor="Intel Inc.",
+            renderer="Intel Iris OpenGL Engine",
+            fix_hairline=True,
+            )
 
     return driver
 
