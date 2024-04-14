@@ -1,8 +1,12 @@
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium_stealth import stealth
 import undetected_chromedriver as uc
 import json
 import time
+import os
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
@@ -11,9 +15,11 @@ import uvicorn
 
 app = FastAPI()
 
+allowed_origin = os.getenv('CORS_ORIGIN', 'http://localhost:3000')
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[allowed_origin],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -21,10 +27,10 @@ app.add_middleware(
 
 
 class Data(BaseModel):
-    productName: str = None
+    productName: str
 
 
-def load_config(cfg_file):
+def load_config(cfg_file='cfg.json'):
     with open(cfg_file) as config_file:
         return json.load(config_file)
 
@@ -54,44 +60,49 @@ def get_webdriver():
 
 def scrape_site(cfg, driver, url, site_name):
     driver.get(url)
-    time.sleep(3)  # Wait for the page to load
-    if site_name == "Best Buy":
-        us_link = driver.find_element(By.XPATH, cfg['xPaths']['bb_country'])
-        us_link.click()
-        time.sleep(1)
+    wait = WebDriverWait(driver, 10)
+    item, price, item_url = "Item not found", "Price not available", "URL not found"
 
-        item = driver.find_element(By.XPATH, cfg['xPaths']['bb_item_name'])
-        item_url = item.get_attribute('href')
-        item = item.text
-        price = driver.find_element(By.XPATH, cfg['xPaths']['bb_item_price']).text
-        price = price.split("$")[1]
-    elif site_name == "Walmart":
-        item_link = driver.find_element(By.XPATH, cfg['xPaths']['w_item_link'])
-        item_link.click()
-        time.sleep(1)
+    try:
+        if site_name == "Best Buy":
+            us_link = wait.until(EC.presence_of_element_located((By.XPATH, cfg['xPaths']['bb_country'])))
+            us_link.click()
+            time.sleep(1)
 
-        item = driver.find_element(By.XPATH, cfg['xPaths']['w_item_name']).text
-        item_url = driver.current_url
-        price = driver.find_element(By.XPATH, cfg['xPaths']['w_item_price']).text
-        price = price.split('$')[1]
-    elif site_name == "Newegg":
-        item = driver.find_element(By.XPATH, cfg['xPaths']['ne_item_name'])
-        item_url = item.get_attribute('href')
-        item = item.text
-        price = (driver.find_element(By.XPATH, cfg['xPaths']['ne_item_price_strong']).text +
-                 driver.find_element(By.XPATH, cfg['xPaths']['ne_item_price_sup']).text)
+            item_element = wait.until(EC.presence_of_element_located((By.XPATH, cfg['xPaths']['bb_item_name'])))
+            item = item_element.text
+            item_url = item_element.get_attribute('href')
+            price = \
+                wait.until(EC.presence_of_element_located((By.XPATH, cfg['xPaths']['bb_item_price']))).text.split("$")[1]
 
-    else:
-        item = "Item not found"
-        price = "Price not available"
-        item_url = "Item URL not found"
+        elif site_name == "Walmart":
+            item_element = wait.until(EC.presence_of_element_located((By.XPATH, cfg['xPaths']['w_item_link'])))
+            item_element.click()
+            time.sleep(1)  # Consider using WebDriverWait here as well
+
+            item = wait.until(EC.presence_of_element_located((By.XPATH, cfg['xPaths']['w_item_name']))).text
+            item_url = driver.current_url
+            price = \
+                wait.until(EC.presence_of_element_located((By.XPATH, cfg['xPaths']['w_item_price']))).text.split('$')[1]
+
+        elif site_name == "Newegg":
+            item_element = wait.until(EC.presence_of_element_located((By.XPATH, cfg['xPaths']['ne_item_name'])))
+            item = item_element.text
+            item_url = item_element.get_attribute('href')
+            price_strong = wait.until(
+                EC.presence_of_element_located((By.XPATH, cfg['xPaths']['ne_item_price_strong']))).text
+            price_sup = wait.until(EC.presence_of_element_located((By.XPATH, cfg['xPaths']['ne_item_price_sup']))).text
+            price = price_strong + price_sup
+
+    except NoSuchElementException:
+        pass  # Item, Price, and Item URL are already set to default values
 
     return item, price, item_url
 
 
 @app.post("/scrape/")
-def scrape(product_name: Data):  # Note: This is now a regular function, not async.
-    cfg = load_config('cfg.json')
+def scrape(product_name: Data):
+    cfg = load_config()
 
     sites = {
         "Walmart": cfg['sites']['walmart'],
@@ -109,15 +120,11 @@ def scrape(product_name: Data):  # Note: This is now a regular function, not asy
 
     driver.quit()
 
-    if results:
-        return results
-    else:
+    if not results:
         raise HTTPException(status_code=404, detail="Data not found")
 
-
-def main():
-    uvicorn.run(app, port=8001)
+    return results
 
 
 if __name__ == "__main__":
-    main()
+    uvicorn.run("main:app", port=8001, reload=True)
