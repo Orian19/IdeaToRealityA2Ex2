@@ -56,7 +56,8 @@ export default function Home() {
                 <tr key={index} className="even:bg-gray-50">
                   <td className="border border-gray-300 px-4 py-2 text-lg text-gray-900">{result.Site}</td>
                   <td className="border border-gray-300 px-4 py-2 text-lg text-blue-600 hover:text-blue-800">
-                    <a href={result['Item Title Name']} target="_blank" rel="noopener noreferrer">
+                    {/* Update href to use result['Item URL'] */}
+                    <a href={result['Item URL']} target="_blank" rel="noopener noreferrer">
                       {result['Item Title Name']}
                     </a>
                   </td>
