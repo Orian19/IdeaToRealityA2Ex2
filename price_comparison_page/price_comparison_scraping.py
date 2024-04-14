@@ -5,8 +5,17 @@ import pandas as pd
 import uvicorn
 import time
 
+# from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["http://localhost:3000"],  # This is for development only!
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
 
 def get_webdriver():
@@ -77,5 +86,5 @@ def scrape(product_name: str):  # Note: This is now a regular function, not asyn
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8001)
+    uvicorn.run(app, port=8001)
 
