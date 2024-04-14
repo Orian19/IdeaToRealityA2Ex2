@@ -14,7 +14,7 @@ export default function Home() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ product_name: productName }),
+      body: JSON.stringify({productName: productName}),
     });
 
     if (response.ok) {

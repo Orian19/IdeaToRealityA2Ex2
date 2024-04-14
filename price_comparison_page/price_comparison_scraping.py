@@ -5,17 +5,22 @@ import pandas as pd
 import uvicorn
 import time
 
-# from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 app = FastAPI()
 
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["http://localhost:3000"],  # This is for development only!
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # This is for development only!
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class Data(BaseModel):
+    productName: str = None
 
 
 def get_webdriver():
@@ -62,7 +67,7 @@ def scrape_site(driver, url, site_name):
 
 
 @app.post("/scrape/")
-def scrape(product_name: str):  # Note: This is now a regular function, not async.
+def scrape(product_name: Data):  # Note: This is now a regular function, not async.
     sites = {
         "Walmart": "https://www.walmart.com/search/?query=",
         "Best Buy": "https://www.bestbuy.com/site/searchpage.jsp?st=",
@@ -73,7 +78,7 @@ def scrape(product_name: str):  # Note: This is now a regular function, not asyn
     driver = get_webdriver()
 
     for site, base_url in sites.items():
-        search_url = base_url + product_name.replace(" ", "+")
+        search_url = base_url + product_name.productName.replace(" ", "+")
         title, price = scrape_site(driver, search_url, site)
         results.append({'Site': site, 'Item Title Name': title, 'Price(USD)': price})
 
