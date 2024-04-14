@@ -1,0 +1,20 @@
+{
+  "sites": {
+    "best_buy": "https://www.bestbuy.com/site/searchpage.jsp?st=",
+    "walmart": "https://www.walmart.com/search/?query=",
+    "newegg": "https://www.newegg.com/p/pl?d="
+  },
+  "xPaths": {
+    "bb_country": "(//div[@class=\"country-selection\"])[1]//a[@class=\"us-link\"]",
+    "bb_item_price": "//ol[@class=\"sku-item-list\"]//li[@class=\"sku-item\"][1]//div[@class=\"sku-list-item-price\"]//span[1]",
+    "bb_item_name": "//ol[@class=\"sku-item-list\"]//li[@class=\"sku-item\"][1]//h4[@class=\"sku-title\"]/a",
+
+    "w_item_link": "//*[@id=\"0\"]/section/div/div[1]/div/div/a",
+    "w_item_price": "//*[@id=\"maincontent\"]/section/main/div[2]/div[2]/div/div[1]/div/div[2]/div/div/span[1]/span[2]/span",
+    "w_item_name": "//*[@id=\"main-title\"]",
+
+    "ne_item_price_strong": "//div[@class=\"item-cell\"][1]//div[@class=\"item-action\"]//ul[@class=\"price\"]//li[3]/strong",
+    "ne_item_price_sup": "//div[@class=\"item-cell\"][1]//div[@class=\"item-action\"]//ul[@class=\"price\"]//li[3]/sup",
+    "ne_item_name": "//div[@class=\"item-cell\"][1]//a[@class=\"item-title\"]"
+  }
+}

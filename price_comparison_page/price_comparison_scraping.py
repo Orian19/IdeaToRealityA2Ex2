@@ -1,18 +1,19 @@
-from fastapi import FastAPI, HTTPException
 from selenium.webdriver.common.by import By
+from selenium_stealth import stealth
 import undetected_chromedriver as uc
-import uvicorn
+import json
 import time
 
 from fastapi.middleware.cors import CORSMiddleware
-from selenium_stealth import stealth
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import uvicorn
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # This is for development only!
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -21,6 +22,11 @@ app.add_middleware(
 
 class Data(BaseModel):
     productName: str = None
+
+
+def load_config(cfg_file):
+    with open(cfg_file) as config_file:
+        return json.load(config_file)
 
 
 def get_webdriver():
@@ -46,34 +52,34 @@ def get_webdriver():
     return driver
 
 
-def scrape_site(driver, url, site_name):
+def scrape_site(cfg, driver, url, site_name):
     driver.get(url)
     time.sleep(3)  # Wait for the page to load
     if site_name == "Best Buy":
-        us_link = driver.find_element(By.XPATH, '(//div[@class="country-selection"])[1]//a[@class="us-link"]')
+        us_link = driver.find_element(By.XPATH, cfg['xPaths']['bb_country'])
         us_link.click()
         time.sleep(1)
 
-        item = driver.find_element(By.XPATH, "//ol[@class=\"sku-item-list\"]//li[@class=\"sku-item\"][1]//h4[@class=\"sku-title\"]/a")
+        item = driver.find_element(By.XPATH, cfg['xPaths']['bb_item_name'])
         item_url = item.get_attribute('href')
         item = item.text
-        price = driver.find_element(By.XPATH, "//ol[@class=\"sku-item-list\"]//li[@class=\"sku-item\"][1]//div[@class=\"sku-list-item-price\"]//span[1]").text
+        price = driver.find_element(By.XPATH, cfg['xPaths']['bb_item_price']).text
         price = price.split("$")[1]
     elif site_name == "Walmart":
-        item_link = driver.find_element(By.XPATH, "//*[@id=\"0\"]/section/div/div[1]/div/div/a")
+        item_link = driver.find_element(By.XPATH, cfg['xPaths']['w_item_link'])
         item_link.click()
         time.sleep(1)
 
-        item = driver.find_element(By.XPATH, "//*[@id=\"main-title\"]").text
+        item = driver.find_element(By.XPATH, cfg['xPaths']['w_item_name']).text
         item_url = driver.current_url
-        price = driver.find_element(By.XPATH, "//*[@id=\"maincontent\"]/section/main/div[2]/div[2]/div/div[1]/div/div[2]/div/div/span[1]/span[2]/span").text
+        price = driver.find_element(By.XPATH, cfg['xPaths']['w_item_price']).text
         price = price.split('$')[1]
     elif site_name == "Newegg":
-        item = driver.find_element(By.XPATH, "//div[@class=\"item-cell\"][1]//a[@class=\"item-title\"]")
+        item = driver.find_element(By.XPATH, cfg['xPaths']['ne_item_name'])
         item_url = item.get_attribute('href')
         item = item.text
-        price = (driver.find_element(By.XPATH, "//div[@class=\"item-cell\"][1]//div[@class=\"item-action\"]//ul[@class=\"price\"]//li[3]/strong").text +
-                 driver.find_element(By.XPATH, "//div[@class=\"item-cell\"][1]//div[@class=\"item-action\"]//ul[@class=\"price\"]//li[3]/sup").text)
+        price = (driver.find_element(By.XPATH, cfg['xPaths']['ne_item_price_strong']).text +
+                 driver.find_element(By.XPATH, cfg['xPaths']['ne_item_price_sup']).text)
 
     else:
         item = "Item not found"
@@ -85,18 +91,20 @@ def scrape_site(driver, url, site_name):
 
 @app.post("/scrape/")
 def scrape(product_name: Data):  # Note: This is now a regular function, not async.
+    cfg = load_config('cfg.json')
+
     sites = {
-        "Walmart": "https://www.walmart.com/search/?query=",
-        "Best Buy": "https://www.bestbuy.com/site/searchpage.jsp?st=",
-        "Newegg": "https://www.newegg.com/p/pl?d="
+        "Walmart": cfg['sites']['walmart'],
+        "Best Buy": cfg['sites']['best_buy'],
+        "Newegg": cfg['sites']['newegg']
     }
-    results = []
 
     driver = get_webdriver()
 
+    results = []
     for site, base_url in sites.items():
         search_url = base_url + product_name.productName.replace(" ", "+")
-        title, price, item_url = scrape_site(driver, search_url, site)
+        title, price, item_url = scrape_site(cfg, driver, search_url, site)
         results.append({'Site': site, 'Item Title Name': title, 'Price(USD)': price, 'Item URL': item_url})
 
     driver.quit()
@@ -107,6 +115,9 @@ def scrape(product_name: Data):  # Note: This is now a regular function, not asy
         raise HTTPException(status_code=404, detail="Data not found")
 
 
-if __name__ == "__main__":
+def main():
     uvicorn.run(app, port=8001)
 
+
+if __name__ == "__main__":
+    main()
