@@ -1,7 +1,6 @@
 "use client";
 
-import Image from "next/image";
-import { useState } from "react";
+import React, { useState, useEffect } from 'react';
 
 export default function Home() {
   const [productName, setProductName] = useState('');
@@ -10,16 +9,26 @@ export default function Home() {
   const [searchHistory, setSearchHistory] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };  
+  const handleButtonClick = () => {
+    setDarkMode(prevDarkMode => !prevDarkMode);
+  };
+
+  useEffect(() => {
+    const isDarkMode = localStorage.getItem('darkMode') === 'true';
+    setDarkMode(isDarkMode);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('darkMode', darkMode.toString());
+    document.body.classList.toggle('dark', darkMode);
+  }, [darkMode]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true); // Start loading
+    setIsLoading(true);
   
-    setSearchHistory([productName, ...searchHistory].slice(0, 10)); // Save only the last 10 searches
-  
+    setSearchHistory([productName, ...searchHistory].slice(0, 10));
+
     const response = await fetch('http://127.0.0.1:8001/scrape/', {
       method: 'POST',
       headers: {
@@ -31,7 +40,6 @@ export default function Home() {
     if (response.ok) {
       const data = await response.json();
       setResults(data);
-      // Add the search term and results to the history
       setSearchHistory(history => [{ term: productName, data }, ...history]);
     } else {
       console.error("Failed to fetch data");
@@ -45,14 +53,20 @@ export default function Home() {
     setResults(historyItem.data);
   };
   
-
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 py-10 px-4">
+    <main className={`flex min-h-screen items-center justify-center ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-black'}`}>
+      <div>
+        <button 
+          className={`fixed top-5 right-5 bg-blue-500 dark:bg-blue-700 text-white p-2 rounded ${darkMode ? 'dark:bg-blue-700' : 'bg-blue-500'}`}
+          onClick={handleButtonClick}>
+            {darkMode ? 'Light Mode' : 'Dark Mode'}
+        </button>
+      </div>
       <div className="flex w-full max-w-6xl">
         {/* Search History Section */}
-        <div className="hidden md:block w-1/4 mr-4 p-4 bg-white shadow overflow-hidden rounded-lg">
-          <h2 className="font-bold text-lg text-gray-900 mb-4">Search History</h2>
-          <ul className="text-sm text-gray-900">
+        <div className={`hidden md:block w-1/4 mr-4 p-4 ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} shadow overflow-hidden rounded-lg`}>
+          <h2 className="font-bold text-lg mb-4">Search History</h2>
+          <ul className="text-sm">
             {searchHistory.map((historyItem, index) => (
               <li key={index} className="truncate cursor-pointer" onClick={() => handleSelectHistoryItem(historyItem)}>
                 {historyItem.term}
@@ -61,10 +75,9 @@ export default function Home() {
           </ul>
         </div>
 
-  
         {/* Main Content Area */}
         <div className="flex-grow">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Product Price Comparison</h1>
+          <h1 className={`text-3xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Product Price Comparison</h1>
           <div className="my-8 w-full max-w-md">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <input
@@ -72,9 +85,9 @@ export default function Home() {
                 placeholder="Enter product name"
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
-                className="w-full rounded-md border border-gray-300 p-2 text-lg text-gray-900"
+                className={`w-full rounded-md border p-2 text-lg ${darkMode ? 'bg-gray-800 border-gray-600 text-gray-300' : 'border-gray-300 text-gray-900'}`}
               />
-              <button type="submit" className="w-full rounded-md bg-blue-500 py-2 px-4 text-lg text-white hover:bg-blue-600">
+              <button type="submit" className={`w-full rounded-md py-2 px-4 text-lg text-white ${darkMode ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-500 hover:bg-blue-600'}`}>
                 Search
               </button>
             </form>
@@ -83,24 +96,24 @@ export default function Home() {
             <div className="text-lg font-semibold text-green-700">Fetching Results...</div>
           ) : results.length > 0 ? (
             <div className="my-8 w-full max-w-4xl overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-200">
+              <table className={`w-full border-collapse border ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-900'}`}>
                 <thead className="bg-gray-200">
                   <tr>
-                    <th className="border border-gray-300 px-4 py-2 text-left text-lg font-semibold text-gray-700">Site</th>
-                    <th className="border border-gray-300 px-4 py-2 text-left text-lg font-semibold text-gray-700">Item</th>
-                    <th className="border border-gray-300 px-4 py-2 text-left text-lg font-semibold text-gray-700">Price(USD)</th>
+                    <th className="border px-4 py-2 text-lg font-semibold">Site</th>
+                    <th className="border px-4 py-2 text-lg font-semibold">Item</th>
+                    <th className="border px-4 py-2 text-lg font-semibold">Price(USD)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {results.map((result, index) => (
-                    <tr key={index} className="even:bg-gray-50">
-                      <td className="border border-gray-300 px-4 py-2 text-lg text-gray-900">{result.Site}</td>
-                      <td className="border border-gray-300 px-4 py-2 text-lg text-blue-600 hover:text-blue-800">
-                        <a href={result['Item URL']} target="_blank" rel="noopener noreferrer">
+                    <tr key={index} className={`${index % 2 === 0 ? 'bg-gray-100' : ''}`}>
+                      <td className="border px-4 py-2 text-lg">{result.Site}</td>
+                      <td className="border px-4 py-2 text-lg">
+                        <a href={result['Item URL']} target="_blank" rel="noopener noreferrer" className={`hover:text-blue-600 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>
                           {result['Item Title Name']}
                         </a>
                       </td>
-                      <td className="border border-gray-300 px-4 py-2 text-lg text-gray-900">{result['Price(USD)']}</td>
+                      <td className="border px-4 py-2 text-lg">{result['Price(USD)']}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -113,4 +126,5 @@ export default function Home() {
       </div>
     </main>
   );
-}  
+}
+
