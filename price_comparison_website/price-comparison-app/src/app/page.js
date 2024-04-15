@@ -56,11 +56,14 @@ export default function Home() {
   return (
     <main className={`flex min-h-screen items-center justify-center ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-black'}`}>
       <div>
-        <button 
-          className={`fixed top-5 right-5 bg-blue-500 dark:bg-blue-700 text-white p-2 rounded ${darkMode ? 'dark:bg-blue-700' : 'bg-blue-500'}`}
-          onClick={handleButtonClick}>
-            {darkMode ? 'Light Mode' : 'Dark Mode'}
-        </button>
+      <button 
+  className={`fixed top-5 right-5 p-2 rounded font-semibold transition-colors duration-300 ease-in-out 
+              ${darkMode ? 'bg-gray-800 text-gray-200 border border-gray-700 hover:bg-gray-700' : 'bg-blue-500 text-white hover:bg-blue-400'} 
+              ${darkMode ? 'shadow-lg' : 'shadow-md'}`}
+  onClick={handleButtonClick}>
+    {darkMode ? 'Light Mode' : 'Dark Mode'}
+</button>
+
       </div>
       <div className="flex w-full max-w-6xl">
         {/* Search History Section */}
@@ -94,33 +97,33 @@ export default function Home() {
           </div>
           {isLoading ? (
             <div className="text-lg font-semibold text-green-700">Fetching Results...</div>
-          ) : results.length > 0 ? (
-            <div className="my-8 w-full max-w-4xl overflow-x-auto">
-              <table className={`w-full border-collapse border ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-900'}`}>
-                <thead className="bg-gray-200">
-                  <tr>
-                    <th className="border px-4 py-2 text-lg font-semibold">Site</th>
-                    <th className="border px-4 py-2 text-lg font-semibold">Item</th>
-                    <th className="border px-4 py-2 text-lg font-semibold">Price(USD)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {results.map((result, index) => (
-                    <tr key={index} className={`${index % 2 === 0 ? 'bg-gray-100' : ''}`}>
-                      <td className="border px-4 py-2 text-lg">{result.Site}</td>
-                      <td className="border px-4 py-2 text-lg">
-                        <a href={result['Item URL']} target="_blank" rel="noopener noreferrer" className={`hover:text-blue-600 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>
-                          {result['Item Title Name']}
-                        </a>
-                      </td>
-                      <td className="border px-4 py-2 text-lg">{result['Price(USD)']}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           ) : (
-            <div className="text-lg font-semibold">No results found.</div>
+            results.length > 0 && (
+              <div className="my-8 w-full max-w-4xl overflow-x-auto">
+                <table className={`w-full border-collapse border ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-white text-gray-900'}`}>
+                  <thead className={`${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                    <tr>
+                      <th className="border px-4 py-2 text-lg font-semibold">Site</th>
+                      <th className="border px-4 py-2 text-lg font-semibold">Item</th>
+                      <th className="border px-4 py-2 text-lg font-semibold">Price(USD)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.map((result, index) => (
+                      <tr key={index} className={`${index % 2 === 0 ? (darkMode ? 'bg-gray-700' : 'bg-gray-100') : ''}`}>
+                        <td className="border px-4 py-2 text-lg">{result.Site}</td>
+                        <td className="border px-4 py-2 text-lg">
+                          <a href={result['Item URL']} target="_blank" rel="noopener noreferrer" className={`hover:text-blue-600 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>
+                            {result['Item Title Name']}
+                          </a>
+                        </td>
+                        <td className="border px-4 py-2 text-lg">{result['Price(USD)']}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
           )}
         </div>
       </div>
